@@ -1,0 +1,25 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2022-11-22T00:11:23+05:30",
+  "id": "quick-start-minikube",
+  "duration": 5,
+  "title": "How to run kubernetes using minikube",
+  "authors": "Prashanth",
+  "summary": "Quick start with Minikube",
+  "source": "k8-minikube.md",
+  "theme": "",
+  "status": [
+    "published"
+  ],
+  "category": [
+    "kubernetes"
+  ],
+  "tags": [
+    "medium"
+  ],
+  "feedback": "https://sriprashanth.com",
+  "url": "quick-start-minikube"
+}

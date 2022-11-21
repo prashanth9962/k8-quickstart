@@ -1,0 +1,264 @@
+
+<!doctype html>
+
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1.0, user-scalable=yes">
+  <meta name="theme-color" content="#4F7DC9">
+  <meta charset="UTF-8">
+  <title>How to run kubernetes using minikube</title>
+  <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+  <link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+  <link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+  <style>
+    .success {
+      color: #1e8e3e;
+    }
+    .error {
+      color: red;
+    }
+  </style>
+</head>
+<body>
+  <google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+  <google-codelab codelab-gaid=""
+                  id="quick-start-minikube"
+                  title="How to run kubernetes using minikube"
+                  environment="web"
+                  feedback-link="https://sriprashanth.com">
+    
+      <google-codelab-step label="Overview" duration="1">
+        <h2 class="checklist" is-upgraded>What You&#39;ll Learn</h2>
+<ul class="checklist">
+<li>how to set up minikube in your local machine</li>
+<li>how to create a docker container</li>
+<li>how to create services in kubernetes</li>
+<li>how to deploy images to kubernetes</li>
+<li>how to setup ingress controller for Kubernetes</li>
+<li>how to serve API&#39;s from pods</li>
+</ul>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Create a docker image" duration="1">
+        <p>We will create a small python application</p>
+<h2 is-upgraded>Step 1: Create a new directory app</h2>
+<pre><code language="language-Terminal" class="language-Terminal">mkdir app
+cd app
+</code></pre>
+<h2 is-upgraded>Step 2: Create a new file app.py</h2>
+<pre><code language="language-app.py" class="language-app.py">from flask import Flask
+import uuid
+randomn_pod_id = uuid.uuid4()
+app = Flask(__name__)
+
+
+@app.route(&#39;/&#39;)
+def hello_world():
+    return f&#39;Hello from app Pod ! {randomn_pod_id}&#39;
+</code></pre>
+<h2 is-upgraded>Step 3: Create a requirement.txt file</h2>
+<pre><code language="language-requirement.txt" class="language-requirement.txt">Flask==2.0.1
+uWSGI==2.0.19.1
+</code></pre>
+<h2 is-upgraded>Step 4: Create conf.ini file</h2>
+<pre><code language="language-conf.ini" class="language-conf.ini">[uwsgi]
+http = :8080
+wsgi-file = app.py
+callable = app
+master = true
+processes = 2
+threads = 1
+listen = 8
+stats = :5050
+stats-http = true
+disable-logging=True
+#Cross service calls return more values in header becoz of JWT in user have move groups token size going big which
+#ends in below error by uwsgi
+#&#34;invalid request block size: 4675 (max 4096)...skip&#34;, so we are increasing the buffer value from 4KB to 32KB
+buffer-size=32768
+py-autoreload = 1
+if-env = VIRTUAL_ENV
+virtualenv = %(_)
+endif =
+</code></pre>
+<h2 is-upgraded>Step 5: Create start.sh file</h2>
+<pre><code>#!/usr/bin/env bash
+uwsgi --ini conf.ini
+</code></pre>
+<h2 is-upgraded>Step 6: Create a Docker-file</h2>
+<pre><code>FROM ubuntu:20.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get clean
+RUN apt-get update -y --fix-missing
+RUN apt-get install -y python3-pip python3-dev build-essential
+RUN pip3 install --upgrade pip
+ENV LC_ALL=C.UTF-8
+
+COPY . /app
+WORKDIR /app
+
+RUN pip3 install -r requirements.txt
+
+ENTRYPOINT [&#34;sh&#34;, &#34;/app/start.sh&#34;]
+</code></pre>
+<h2 is-upgraded>Step 7: Build a Docker image</h2>
+<pre><code>docker build . -t app:latest
+</code></pre>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Run Docker Container" duration="0">
+        <h2 is-upgraded>Step 8: Run Docker container from Image</h2>
+<p>Below command runs docker container in background</p>
+<pre><code>docker run -d -p 8080:8080 app
+48cb6f108a2390d5b157a0879a6a3da6507e22957d42b37360da55adfdad9ab5 #container id
+</code></pre>
+<p>To Test the application use curl or hit <code>http://localhost:8080/</code> in browser</p>
+<pre><code language="language-Curl" class="language-Curl">&gt;curl http://localhost:8080/
+Hello from app Pod !% 
+</code></pre>
+<h2 is-upgraded>Step 10: Stop docker container</h2>
+<pre><code>docker ps 
+CONTAINER ID   IMAGE                      COMMAND                  CREATED              STATUS              PORTS                                      NAMES
+afd0509a0174   app                        &#34;sh /app/start.sh&#34;       About a minute ago   Up About a minute                                              sad_herschel
+</code></pre>
+<h2 is-upgraded>Step 11: Stop and remove docker container</h2>
+<pre><code>docker stop app
+docker rm app
+</code></pre>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Minikube Installation" duration="2">
+        <h2 is-upgraded>What is Minikube ?</h2>
+<p>Minikube runs a singe node kubernetes cluster on your machine. We can use this to try kubernetes for development.</p>
+<h2 is-upgraded>Install Minikube</h2>
+<p>Use this link to install minikube : <a href="https://minikube.sigs.k8s.io/docs/start/" target="_blank">Minikube Guide</a></p>
+<h2 is-upgraded>Start Minikube</h2>
+<ul>
+<li>Open Terminal and run <code>open -a Docker</code>. This will start docker container in local machine.</li>
+<li>Open Terminal and run <code>minikube start</code>. This will start minikube in local machine.</li>
+</ul>
+<h2 is-upgraded>Open Terminal and excecute</h2>
+<pre><code language="language-Terminal" class="language-Terminal">open -a Docker
+minikube start
+</code></pre>
+<h2 is-upgraded>Minikube Dashboard</h2>
+<p>Minikube starts without dashboard, execute below code to open dashboard</p>
+<pre><code language="language-Terminal" class="language-Terminal"> minikube dashboard --url
+</code></pre>
+<h2 is-upgraded>Minikube Kubectl set config</h2>
+<pre><code language="language-Get" class="language-Get">&gt;kubectl config get-contexts
+CURRENT   NAME      CLUSTER         AUTHINFO           
+		  NAMESPACE
+*       minikube    minikube        minikube                                                     
+          default
+</code></pre>
+<pre><code language="language-Set" class="language-Set">&gt; kubectl config set-context minikube
+Context &#34;minikube&#34; modified.
+</code></pre>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Kubernetes - Create a deployment for app" duration="1">
+        <p>Deployments are used to define the state of the pod.</p>
+<h2 is-upgraded>Create deployment.yml file</h2>
+<pre><code language="language-deployment.yml" class="language-deployment.yml"># This file configures the hello-world app which serves public web traffic.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: app
+  template:
+    metadata:
+      labels:
+        name: app
+    spec:
+      containers:
+      - name: app-pod
+        image: app:latest
+        imagePullPolicy: Never
+        ports:
+          - name: app-server
+            containerPort: 8080
+</code></pre>
+<h2 is-upgraded>Goto Minikube dashboard to check deployment</h2>
+<p>There should be ErrImgPull. You could see deployment created but the container is not created.This because the Image is not found in the minkube image registery.</p>
+<h2 is-upgraded>Add container image to minikube</h2>
+<p>The below command will add the app container image to the minikube image registery.</p>
+<pre><code>minikube cache add app:latest
+</code></pre>
+<p>Visit Minikube dashboard and you could see pod created.</p>
+<pre><code>&gt; kubectl get pods
+NAME                   READY   STATUS    RESTARTS   AGE
+app-6545966957-xkg9l   1/1     Running   0          39s
+</code></pre>
+<pre><code>&gt; kubectl get svc
+NAME         TYPE        CLUSTER-IP   EXTERNAL-IP   PORT(S)   AGE
+kubernetes   ClusterIP   10.96.0.1    &lt;none&gt;        443/TCP   3m8s
+</code></pre>
+<h2 is-upgraded>Create service.yml file</h2>
+<p>Services are used as logical abstraction to set of pods and can be used to access traffic.</p>
+<pre><code language="language-service.yml" class="language-service.yml">---
+apiVersion: v1
+kind: Service
+metadata:
+  name: app-service
+  labels:
+    name: app
+spec:
+  type: NodePort
+  ports:
+  - port: 8080
+    targetPort: app-server
+    nodePort: 30085
+  selector:
+    name: app
+</code></pre>
+<p>We have created a nodeport service</p>
+<pre><code>&gt; kubectl get svc
+NAME          TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)          AGE
+app-service   NodePort    10.109.64.50   &lt;none&gt;        8080:30085/TCP   6s
+kubernetes    ClusterIP   10.96.0.1      &lt;none&gt;        443/TCP          5m4s
+</code></pre>
+<p>Created a proxy service in minikube to access it via node port</p>
+<pre><code language="language-create" class="language-create">&gt; minikube service app-service --url
+http://127.0.0.1:52018
+❗  Because you are using a Docker driver on darwin, the terminal needs to be open to run it.
+
+</code></pre>
+<p>use curl or hit browser</p>
+<pre><code>&gt; curl http://127.0.0.1:52018
+Hello from app Pod !%    
+</code></pre>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Manual scale and check traffic" duration="0">
+        <h2 is-upgraded>Increase replica and check for pod count</h2>
+<h2 is-upgraded>access  pod using curl</h2>
+
+
+      </google-codelab-step>
+    
+  </google-codelab>
+
+  <script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+  <script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+  <script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+  <script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+  <script src="//support.google.com/inapp/api.js"></script>
+
+</body>
+</html>
